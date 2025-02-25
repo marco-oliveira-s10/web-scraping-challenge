@@ -49,7 +49,7 @@ O objetivo deste projeto é demonstrar técnicas de web scraping em um ambiente 
 ### 1. Clonar o Repositório
 ```bash
 git clone https://github.com/marco-oliveira-s10/web-scraping-challenge.git
-cd web-scraping-platform
+cd web-scraping-challenge
 ```
 
 ### 2. Configurar Ambiente
@@ -124,7 +124,7 @@ php artisan cache:clear
 
 ```
 
-### Método 2: Executar Batch Script (Simulando CronJob em Ambientes)(Recomendado)
+### Método 2: Executar cron.bat (Simulando CronJob em Ambientes)(Recomendado)
 ```batch
 @echo off
 :loop
