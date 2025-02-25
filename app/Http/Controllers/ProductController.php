@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\Cache;
 class ProductController extends Controller
 {
     /**
-     * Display a listing of products for public users.
+     * Listar produtos com opção de filtro por categoria
      */
     public function index(Request $request)
     {
         $category = $request->get('category');
         
-        // Using cache for better performance
+        // Cache para melhor performance
         $cacheKey = 'products_' . ($category ?? 'all') . '_page_' . $request->get('page', 1);
         
         $products = Cache::remember($cacheKey, 600, function () use ($category) {
@@ -27,19 +27,20 @@ class ProductController extends Controller
             
             return $query->paginate(12);
         });
-        
+
+        // Cache para categorias
         $categories = Cache::remember('product_categories', 3600, function () {
             return Product::select('category')
                 ->distinct()
                 ->whereNotNull('category')
                 ->pluck('category');
         });
-        
+                
         return view('products.index', compact('products', 'categories', 'category'));
     }
 
     /**
-     * Display the specified product.
+     * Mostrar detalhes de um produto
      */
     public function show($id)
     {
@@ -51,7 +52,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Display products by category.
+     * Listar produtos por categoria
      */
     public function byCategory($category)
     {
@@ -67,5 +68,20 @@ class ProductController extends Controller
         });
         
         return view('products.index', compact('products', 'categories', 'category'));
+    }
+
+    /**
+     * Listar todas as categorias
+     */
+    public function listCategories()
+    {
+        $categories = Cache::remember('product_categories', 3600, function () {
+            return Product::select('category')
+                ->distinct()
+                ->whereNotNull('category')
+                ->pluck('category');
+        });
+        
+        return view('products.categories', compact('categories'));
     }
 }

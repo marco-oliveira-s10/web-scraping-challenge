@@ -41,147 +41,50 @@ class ScrapingService
      * @return bool
      */
     public function scrapeProducts()
-    {
-        try {
-            Log::info('Starting product scraping process');
-            $this->logScrapingEvent('info', null, 'Starting product scraping process');
+{
+    try {
+        Log::info('Starting comprehensive product scraping process');
+        
+        // Obter categorias disponíveis
+        $categories = $this->getAvailableCategories();
+        
+        $totalScrapedCount = 0;
+        $categoryResults = [];
+        
+        // Iterar sobre cada categoria
+        foreach ($categories as $category) {
+            Log::info("Scraping category: {$category}");
             
-            // Get the last scrape time to compare product timestamps
-            $lastScrapeTime = $this->getLastScrapeTime();
+            $scrapedCount = $this->scrapeProductsByCategory($category);
             
-            $response = $this->client->get($this->url);
-            $html = (string) $response->getBody();
+            $categoryResults[$category] = $scrapedCount;
+            $totalScrapedCount += $scrapedCount;
             
-            $crawler = new Crawler($html);
-            
-            // Find all product blocks on the page
-            $products = $crawler->filter('.thumbnail');
-            
-            $scrapedCount = 0;
-            $updatedCount = 0;
-            $newCount = 0;
-            $unchangedCount = 0;
-            
-            // Begin a database transaction
-            DB::beginTransaction();
-            
-            foreach ($products as $productNode) {
-                try {
-                    $product = new Crawler($productNode);
-                    
-                    // Extract product information
-                    $name = $product->filter('a.title')->text();
-                    $priceText = $product->filter('h4.price')->text();
-                    $price = (float) str_replace('$', '', $priceText);
-                    
-                    // Extract description (intermediate level requirement)
-                    $description = $product->filter('p.description')->count() > 0 
-                        ? $product->filter('p.description')->text() 
-                        : null;
-                    
-                    // Extract image URL (intermediate level requirement)
-                    $imageUrl = null;
-                    if ($product->filter('img')->count() > 0) {
-                        $imgSrc = $product->filter('img')->attr('src');
-                        // Convert relative URLs to absolute
-                        if ($imgSrc && !str_starts_with($imgSrc, 'http')) {
-                            $imageUrl = 'https://webscraper.io' . $imgSrc;
-                        } else {
-                            $imageUrl = $imgSrc;
-                        }
-                    }
-                    
-                    // Extract category (intermediate level requirement)
-                    $category = $this->determineCategory($product);
-                    
-                    // Generate a unique ID for the product based on the name
-                    $productId = Str::slug($name);
-                    
-                    // Check if the product already exists
-                    $existingProduct = Product::where('product_id', $productId)->first();
-                    
-                    if ($existingProduct) {
-                        // Create a checksum of the current data to compare with the new data
-                        $existingChecksum = md5(
-                            $existingProduct->name . 
-                            $existingProduct->price . 
-                            $existingProduct->description . 
-                            $existingProduct->image_url . 
-                            $existingProduct->category
-                        );
-                        
-                        $newChecksum = md5(
-                            $name . 
-                            $price . 
-                            $description . 
-                            $imageUrl . 
-                            $category
-                        );
-                        
-                        // Only update if there are actual changes (optimization)
-                        if ($existingChecksum !== $newChecksum) {
-                            $existingProduct->update([
-                                'name' => $name,
-                                'price' => $price,
-                                'description' => $description,
-                                'image_url' => $imageUrl,
-                                'category' => $category
-                            ]);
-                            $updatedCount++;
-                        } else {
-                            $unchangedCount++;
-                        }
-                    } else {
-                        // Create a new product
-                        Product::create([
-                            'product_id' => $productId,
-                            'name' => $name,
-                            'price' => $price,
-                            'description' => $description,
-                            'image_url' => $imageUrl,
-                            'category' => $category
-                        ]);
-                        $newCount++;
-                    }
-                    
-                    $scrapedCount++;
-                } catch (\Exception $e) {
-                    // Log error for individual product but continue processing others
-                    Log::warning('Error processing product: ' . $e->getMessage());
-                    $this->logScrapingEvent('warning', null, 'Error processing product: ' . $e->getMessage());
-                }
-            }
-            
-            // Commit the transaction
-            DB::commit();
-            
-            // Clear the product cache
-            $this->clearProductCache();
-            
-            // Update the last scrape time
-            $this->updateLastScrapeTime();
-            
-            $logMessage = "Scraping completed successfully. Processed {$scrapedCount} products total: {$newCount} new, {$updatedCount} updated, {$unchangedCount} unchanged.";
-            Log::info($logMessage);
-            $this->logScrapingEvent('success', null, $logMessage);
-            
-            return true;
-        } catch (\Exception $e) {
-            // Rollback the transaction in case of error
-            DB::rollBack();
-            
-            Log::error('Error during scraping process: ' . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString()
-            ]);
-            $this->logScrapingEvent('error', null, 'Error during scraping process: ' . $e->getMessage(), [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return false;
+            Log::info("Scraped {$scrapedCount} products in category: {$category}");
         }
+        
+        $logMessage = "Comprehensive scraping completed. Total products scraped: {$totalScrapedCount}";
+        Log::info($logMessage);
+        $this->logScrapingEvent('success', null, $logMessage, [
+            'total_products' => $totalScrapedCount,
+            'category_breakdown' => $categoryResults
+        ]);
+        
+        return $totalScrapedCount > 0;
+    } catch (\Exception $e) {
+        Log::error('Error during comprehensive scraping process: ' . $e->getMessage(), [
+            'exception' => $e,
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        $this->logScrapingEvent('error', null, 'Error during comprehensive scraping process: ' . $e->getMessage(), [
+            'exception' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return false;
     }
+}
     
     /**
      * Scrape products by specific category with caching and optimization
