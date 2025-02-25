@@ -11,13 +11,14 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Jobs\ScrapeProductsJob;
 
+
 class TaskController extends Controller
 {
     public $availableTasks = [
         'product:fetch' => [
             'name' => 'Fetch Products',
             'description' => 'Fetch all products from external API',
-            'schedule' => 'Every 10 minutes',
+            'schedule' => 'Every 2 minutes',
             'job_class' => ScrapeProductsJob::class
         ]
     ];
@@ -78,37 +79,24 @@ class TaskController extends Controller
 
     public function run(Request $request)
     {
-        $task = $request->input('task');
-
-        if (!array_key_exists($task, $this->availableTasks)) {
-            return response()->json(['error' => 'Invalid task: ' . $task], 400);
-        }
-
-        try {
-            // Pega a classe de job associada à tarefa
-            $jobClass = $this->availableTasks[$task]['job_class'] ?? null;
-
-            if ($jobClass && class_exists($jobClass)) {
-                // Dispatch o job diretamente
-                $job = new $jobClass();
-                dispatch($job);
-
-                return response()->json([
-                    'message' => 'Task queued successfully'
-                ]);
-            } else {
-                throw new \Exception('Job class not found');
-            }
-        } catch (\Exception $e) {
-            Log::error('Task execution failed', [
-                'task' => $task,
-                'error' => $e->getMessage()
-            ]);
-
+        $taskId = $request->input('task');
+    
+        if ($taskId === 'product:fetch') {
+            // Cria uma instância do ProductController
+            $productController = app()->make(\App\Http\Controllers\Admin\ProductController::class);
+            
+            // Chama o método scrape
+            $response = $productController->scrape($request);
+    
+            // Registra o horário da última execução
+            Cache::put("task_last_run_{$taskId}", now());
+    
             return response()->json([
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Scraping task started successfully'
+            ]);
         }
+    
+        return response()->json(['error' => 'Invalid task'], 400);
     }
 
     public function status()
@@ -155,25 +143,25 @@ class TaskController extends Controller
         }
     }
 
-    protected function getLastRunTime($command)
-    {
-        $lastRun = Cache::get("task_last_run_{$command}");
-        return $lastRun ? Carbon::parse($lastRun)->format('Y-m-d H:i:s') : null;
+   // Métodos para calcular last_run e next_run
+protected function getLastRunTime($command)
+{
+    $lastRun = Cache::get("task_last_run_{$command}");
+    return $lastRun ? Carbon::parse($lastRun)->format('Y-m-d H:i:s') : null;
+}
+
+protected function calculateNextRun($command)
+{
+    $lastRun = Cache::get("task_last_run_{$command}");
+    
+    if ($lastRun) {
+        $nextRun = Carbon::parse($lastRun)->addMinutes(2);
+        return $nextRun->format('Y-m-d H:i:s');
     }
 
-    protected function calculateNextRun($command)
-    {
-        // Calcula o próximo horário baseado no último horário de execução
-        $lastRun = Cache::get("task_last_run_{$command}");
-        
-        if ($lastRun) {
-            $nextRun = Carbon::parse($lastRun)->addMinutes(10);
-            return $nextRun->format('Y-m-d H:i:s');
-        }
-
-        // Se nunca rodou, próxima execução é agora + 10 minutos
-        return now()->addMinutes(10)->format('Y-m-d H:i:s');
-    }
+    // Se nunca rodou, próxima execução é agora + 2 minutos
+    return now()->addMinutes(2)->format('Y-m-d H:i:s');
+}
 
     protected function getTaskStatus($command)
     {
@@ -182,7 +170,7 @@ class TaskController extends Controller
 
         // Se o status for 'enabled' e já passou o tempo de execução, muda para 'waiting'
         if ($status === 'enabled' && $lastRun) {
-            $nextRun = Carbon::parse($lastRun)->addMinutes(10);
+            $nextRun = Carbon::parse($lastRun)->addMinutes(2);
             return $nextRun->isPast() ? 'waiting' : 'scheduled';
         }
 

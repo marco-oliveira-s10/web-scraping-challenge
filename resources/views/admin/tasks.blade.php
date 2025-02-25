@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <!-- Status Overview -->
     <div class="row">
-       
+
     </div>
 
     <!-- Scheduled Tasks -->
@@ -46,9 +46,6 @@
                                 <button class="btn btn-sm btn-info" onclick="runTask('{{ $task['id'] }}')">
                                     <i class="fas fa-play"></i>
                                 </button>
-                                <button class="btn btn-sm btn-warning" onclick="toggleTask('{{ $task['id'] }}')">
-                                    <i class="fas fa-pause"></i>
-                                </button>
                             </td>
                         </tr>
                         @endforeach
@@ -76,7 +73,7 @@
                         <label>Select Task</label>
                         <select class="form-control" name="task">
                             @foreach($scheduledTasks as $task)
-                                <option value="{{ $task['id'] }}">{{ $task['name'] }}</option>
+                            <option value="{{ $task['id'] }}">{{ $task['name'] }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -104,32 +101,33 @@
 
     // Funções para gerenciamento de tasks
     function runTask(taskId) {
-    if (!confirm('Are you sure you want to run this task now?')) {
-        return;
-    }
 
-    $.ajax({
-        url: '{{ route("admin.tasks.run") }}',
-        type: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content'),
-            task: taskId
-        },
-        success: function(response) {
-            showToast('success', 'Task started successfully');
-            setTimeout(function() {
-                location.reload();
-            }, 2000);
-        },
-        error: function(xhr) {
-            let errorMsg = 'Failed to start task';
-            if (xhr.responseJSON && xhr.responseJSON.error) {
-                errorMsg += ': ' + xhr.responseJSON.error;
-            }
-            showToast('error', errorMsg);
+        if (!confirm('Are you sure you want to run this task now?')) {
+            return;
         }
-    });
-}
+
+        $.ajax({
+            url: '{{ route("admin.tasks.run") }}',
+            type: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                task: taskId
+            },
+            success: function(response) {
+                showToast('success', 'Task started successfully');
+                setTimeout(function() {
+                    location.reload();
+                }, 2000);
+            },
+            error: function(xhr) {
+                let errorMsg = 'Failed to start task';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                }
+                showToast('error', errorMsg);
+            }
+        });
+    }
 
     function toggleTask(taskId) {
         $.ajax({

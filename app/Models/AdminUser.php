@@ -43,7 +43,7 @@ class AdminUser extends Authenticatable
         'password' => 'hashed',
         'settings' => 'json',
     ];
-    
+
     /**
      * Get the admin's notification preferences.
      */
@@ -51,7 +51,7 @@ class AdminUser extends Authenticatable
     {
         return $this->settings['receive_batch_notifications'] ?? true;
     }
-    
+
     /**
      * Get the admin's critical notification preferences.
      */

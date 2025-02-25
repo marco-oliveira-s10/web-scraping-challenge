@@ -10,31 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
 {
-    /**
-     * Define the application's command schedule.
-     */
     protected function schedule(Schedule $schedule): void
-    {
-        // Principal job de scraping - roda a cada 2 minutos
-        $schedule->job(new ScrapeProductsJob)
-            ->everyTwoMinutes()
-            ->withoutOverlapping()
-            ->onSuccess(function () {
-                Cache::put('last_successful_scrape', now());
-                Log::info('Scheduled scraping completed successfully');
-            })
-            ->onFailure(function () {
-                Log::error('Scheduled scraping failed');
-            });
-    }
-
-    /**
-     * Register the commands for the application.
-     */
-    protected function commands(): void
-    {
-        $this->load(__DIR__.'/Commands');
-
-        require base_path('routes/console.php');
-    }
+{
+    $schedule->call(function () {
+       echo 'Scheduled scraping started';
+        try {
+            $productController = app()->make(\App\Http\Controllers\Admin\ProductController::class);
+            $response = $productController->scrape(request());
+            
+            echo 'Scheduled scraping completed';
+        } catch (\Exception $e) {
+            echo 'Scheduled scraping failed';
+        }
+    })->everyMinute(); // Mudei para everyMinute para facilitar teste
+}
 }
