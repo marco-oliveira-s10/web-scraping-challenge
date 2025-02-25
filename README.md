@@ -178,6 +178,6 @@ Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
 
 ## 📞 Contato
 
-Seu Nome - marco.oliveira.s10@gmail.com
+Marco Oliveira - marco.oliveira.s10@gmail.com
 
-Link do Projeto: [https://github.com/seu-usuario/web-scraping-platform](https://github.com/marco-oliveira-s10/web-scraping-challenge)
+Link do Projeto: [https://github.com/marco-oliveira-s10/web-scraping-challenge]
