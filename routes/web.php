@@ -1,25 +1,77 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\AuthController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application.
+| Aqui é onde você pode registrar as rotas da web para sua aplicação.
+| Estas rotas são carregadas pelo RouteServiceProvider dentro de um grupo
+| que contém o middleware "web". Agora crie algo incrível!
 |
 */
 
-// Rota para login (também disponível como 'login' para compatibilidade)
+// Rota pública - Página inicial (frontend)
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
+
+// Rotas para visualização de produtos para usuários regulares
+Route::get('/products', [App\Http\Controllers\ProductController::class, 'index'])->name('products.index');
+Route::get('/products/{id}', [App\Http\Controllers\ProductController::class, 'show'])->name('products.show');
+Route::get('/categories/{category}', [App\Http\Controllers\ProductController::class, 'byCategory'])->name('products.category');
+
+// Rota de compatibilidade para login
 Route::get('/login', function() {
     return redirect('/admin/login');
 })->name('login');
 
-// Rota para o dashboard sem autenticação (APENAS PARA TESTES)
+// Rotas de autenticação para Admin
+Route::prefix('admin')->name('admin.')->group(function () {
+    // Rotas públicas para área administrativa
+    Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    
+    // Rotas protegidas por autenticação admin
+    Route::middleware(['auth:admin'])->group(function () {
+        // Logout
+        Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+        
+        // Dashboard
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        
+        // System monitoring
+        Route::get('/logs', [DashboardController::class, 'logs'])->name('logs');
+        Route::get('/tasks', [DashboardController::class, 'tasks'])->name('tasks');
+        Route::get('/status', [DashboardController::class, 'status'])->name('status');
+        
+        // Actions
+        Route::post('/run-scrape', [DashboardController::class, 'runScrape'])->name('run-scrape');
+        Route::post('/retry-job', [DashboardController::class, 'retryJob'])->name('retry-job');
+        Route::post('/clear-failed-jobs', [DashboardController::class, 'clearFailedJobs'])->name('clear-failed-jobs');
+        Route::post('/clear-cache', [DashboardController::class, 'clearCache'])->name('clear-cache');
+        
+        // Product management
+        Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
+        Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
+        Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+        
+        // Executar scrape de uma categoria específica
+        Route::post('/products/scrape-category', [ProductController::class, 'scrape'])->name('products.scrape');
+        
+        // Ver categorias disponíveis para scraping
+        Route::get('/products/available-categories', [ProductController::class, 'categories'])->name('products.categories');
+    });
+});
+
+// Rota para demonstração do dashboard (APENAS PARA TESTES - remover em produção)
 Route::get('/dashboard-demo', function() {
     // Fornecer dados simulados para o dashboard
     $productCount = 120;
@@ -68,37 +120,3 @@ Route::get('/dashboard-demo', function() {
         'lastScrapeTime'
     ));
 })->name('dashboard.demo');
-
-// Rota para página inicial
-Route::get('/', function() {
-    return redirect('/dashboard-demo');
-});
-
-// Admin authentication routes
-Route::get('/admin/login', [AuthController::class, 'loginForm'])->name('admin.login');
-Route::post('/admin/login', [AuthController::class, 'login'])->name('admin.login.post');
-Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
-
-// Admin routes (autenticação desativada para teste)
-Route::prefix('admin')->name('admin.')->group(function () {
-    // Dashboard
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // System monitoring
-    Route::get('/logs', [DashboardController::class, 'logs'])->name('logs');
-    Route::get('/tasks', [DashboardController::class, 'tasks'])->name('tasks');
-    Route::get('/status', [DashboardController::class, 'status'])->name('status');
-    
-    // Actions
-    Route::post('/run-scrape', [DashboardController::class, 'runScrape'])->name('run-scrape');
-    Route::post('/retry-job', [DashboardController::class, 'retryJob'])->name('retry-job');
-    Route::post('/clear-failed-jobs', [DashboardController::class, 'clearFailedJobs'])->name('clear-failed-jobs');
-    Route::post('/clear-cache', [DashboardController::class, 'clearCache'])->name('clear-cache');
-    
-    // Product management
-    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-    Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
-    Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
-    Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
-    Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
-});

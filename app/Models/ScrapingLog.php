@@ -31,7 +31,7 @@ class ScrapingLog extends Model
         'context' => 'json',
         'occurred_at' => 'datetime',
     ];
-
+    
     /**
      * Scope a query to only include logs of a given type.
      *
@@ -43,7 +43,7 @@ class ScrapingLog extends Model
     {
         return $query->where('type', $type);
     }
-
+    
     /**
      * Scope a query to only include logs of a given category.
      *
