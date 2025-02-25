@@ -15,9 +15,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Principal job de scraping - roda a cada 6 horas
+        // Principal job de scraping - roda a cada 2 minutos
         $schedule->job(new ScrapeProductsJob)
-            ->everyFourHours()
+            ->everyTwoMinutes()
             ->withoutOverlapping()
             ->onSuccess(function () {
                 Cache::put('last_successful_scrape', now());
@@ -25,46 +25,6 @@ class Kernel extends ConsoleKernel
             })
             ->onFailure(function () {
                 Log::error('Scheduled scraping failed');
-            });
-        
-        // Job de categorias específicas - roda duas vezes por dia
-        $schedule->command('scraper:categories')
-            ->twiceDaily(1, 13)
-            ->withoutOverlapping()
-            ->emailOutputOnFailure(['admin@example.com']);
-        
-        // Limpeza semanal
-        $schedule->command('scraper:cleanup')
-            ->weekly()
-            ->sundays()
-            ->at('00:00')
-            ->withoutOverlapping();
-            
-        // Monitoramento de saúde do sistema - a cada 15 minutos
-        $schedule->command('health:check')
-            ->everyFifteenMinutes()
-            ->withoutOverlapping();
-            
-        // Limpeza de cache antiga - diariamente
-        $schedule->command('cache:prune-stale-tags')->daily();
-        
-        // Manutenção do banco de dados - semanalmente
-        $schedule->command('db:clean')
-            ->weekly()
-            ->saturdays()
-            ->at('02:00')
-            ->withoutOverlapping();
-            
-        // Monitoramento do Redis
-        $schedule->command('queue:monitor')
-            ->everyTenMinutes()
-            ->withoutOverlapping();
-            
-        // Backup do banco - diariamente
-        $schedule->command('backup:run')
-            ->dailyAt('01:00')
-            ->onFailure(function () {
-                Log::error('Database backup failed');
             });
     }
 

@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\ScrapingService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\ScrapingCompletedNotification;
 use App\Notifications\ScrapingFailedNotification;
@@ -40,11 +41,19 @@ class ScrapeProductsJob implements ShouldQueue
     protected $category;
 
     /**
+     * The source for scraping (sync or async)
+     *
+     * @var string
+     */
+    protected $source;
+
+    /**
      * Create a new job instance.
      */
-    public function __construct(string $category = null)
+    public function __construct(string $category = null, string $source = 'async')
     {
         $this->category = $category;
+        $this->source = $source;
     }
 
     /**
@@ -53,56 +62,109 @@ class ScrapeProductsJob implements ShouldQueue
     public function handle(ScrapingService $scrapingService): void
     {
         try {
-            Log::info('Starting scheduled product scraping job', [
+            Log::info('Starting product scraping job', [
                 'category' => $this->category ?? 'all',
+                'source' => $this->source,
                 'job_id' => $this->job->getJobId()
             ]);
 
-            // Perform the scraping
-            if ($this->category) {
-                $count = $scrapingService->scrapeProductsByCategory($this->category);
-                $success = ($count > 0);
-                $message = $success 
-                    ? "Successfully scraped {$count} products in category: {$this->category}" 
-                    : "Failed to scrape products in category: {$this->category}";
-            } else {
-                $success = $scrapingService->scrapeProducts();
-                $message = $success 
-                    ? "Successfully scraped products from all categories" 
-                    : "Failed to scrape products";
-            }
+            // Definir o status de execução
+            Cache::put("task_last_run_product:fetch", now());
+            
+            // Atualizar status para em progresso
+            Cache::put("task_status_product:fetch", 'running');
 
-            // Log the result
-            if ($success) {
-                Log::info($message, [
-                    'job_id' => $this->job->getJobId(),
-                    'category' => $this->category ?? 'all'
-                ]);
-                
-                // Send notification about success to admin users
-                $this->notifyAdmins(true, $message);
-            } else {
-                Log::warning($message, [
-                    'job_id' => $this->job->getJobId(),
-                    'category' => $this->category ?? 'all'
-                ]);
-                
-                // Send notification about failure to admin users
-                $this->notifyAdmins(false, $message);
-            }
+            // Perform the scraping
+            $result = $this->performScraping($scrapingService);
+
+            // Atualizar status de conclusão
+            Cache::put("task_status_product:fetch", $result['success'] ? 'completed' : 'failed');
+
+            // Log e notificação
+            $this->handleScrapingResult($result);
+
         } catch (\Exception $e) {
-            Log::error('Error in scheduled scraping job: ' . $e->getMessage(), [
+            // Em caso de exceção, marcar como falha
+            Cache::put("task_status_product:fetch", 'failed');
+
+            Log::error('Error in scraping job: ' . $e->getMessage(), [
                 'exception' => $e,
                 'trace' => $e->getTraceAsString(),
                 'job_id' => $this->job->getJobId(),
                 'category' => $this->category ?? 'all'
             ]);
             
-            // Send notification about exception to admin users
+            // Notificar sobre falha crítica
             $this->notifyAdmins(false, 'An error occurred during the scraping process: ' . $e->getMessage());
             
-            // Re-throw the exception to trigger the job's failed method
+            // Re-throw para acionar o método failed()
             throw $e;
+        }
+    }
+
+    /**
+     * Realizar o scraping com base na fonte
+     */
+    protected function performScraping(ScrapingService $scrapingService): array
+    {
+        try {
+            // Verificar a fonte do scraping
+            if ($this->source === 'sync') {
+                // Se for síncrono, usar método equivalente ao botão de scraping
+                $success = $scrapingService->syncScrapeProducts($this->category);
+                $message = $success 
+                    ? "Successfully scraped products" 
+                    : "Failed to scrape products";
+            } else {
+                // Modo assíncrono padrão
+                if ($this->category) {
+                    $count = $scrapingService->scrapeProductsByCategory($this->category);
+                    $success = ($count > 0);
+                    $message = $success 
+                        ? "Successfully scraped {$count} products in category: {$this->category}" 
+                        : "Failed to scrape products in category: {$this->category}";
+                } else {
+                    $success = $scrapingService->scrapeProducts();
+                    $message = $success 
+                        ? "Successfully scraped products from all categories" 
+                        : "Failed to scrape products";
+                }
+            }
+
+            return [
+                'success' => $success,
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            Log::error('Scraping failed: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Processar resultado do scraping
+     */
+    protected function handleScrapingResult(array $result): void
+    {
+        if ($result['success']) {
+            Log::info($result['message'], [
+                'job_id' => $this->job->getJobId(),
+                'category' => $this->category ?? 'all'
+            ]);
+            
+            // Enviar notificação de sucesso para admins
+            $this->notifyAdmins(true, $result['message']);
+        } else {
+            Log::warning($result['message'], [
+                'job_id' => $this->job->getJobId(),
+                'category' => $this->category ?? 'all'
+            ]);
+            
+            // Enviar notificação de falha para admins
+            $this->notifyAdmins(false, $result['message']);
         }
     }
 
@@ -117,7 +179,10 @@ class ScrapeProductsJob implements ShouldQueue
             'category' => $this->category ?? 'all'
         ]);
         
-        // Send a notification about the critical failure
+        // Atualizar status final de falha
+        Cache::put("task_status_product:fetch", 'failed');
+        
+        // Enviar notificação sobre falha crítica
         $this->notifyAdmins(false, 'Critical failure: Scraping job failed after all attempts', true);
     }
     
@@ -127,8 +192,6 @@ class ScrapeProductsJob implements ShouldQueue
     private function notifyAdmins(bool $success, string $message, bool $critical = false): void
     {
         try {
-            // In a real application, you would fetch admin users who should receive notifications
-            // For this example, we're just logging since we don't have an admin user system yet
             if ($success) {
                 Log::info('Would send success notification to admins: ' . $message);
                 // Uncomment in a real application with AdminUser model

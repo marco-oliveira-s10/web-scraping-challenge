@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-use App\Models\ScrapingLog;
+use App\Jobs\ScrapeProductsJob;
 
 class TaskController extends Controller
 {
@@ -17,7 +17,8 @@ class TaskController extends Controller
         'product:fetch' => [
             'name' => 'Fetch Products',
             'description' => 'Fetch all products from external API',
-            'schedule' => 'Every 10 minutes'
+            'schedule' => 'Every 10 minutes',
+            'job_class' => ScrapeProductsJob::class
         ]
     ];
 
@@ -37,13 +38,16 @@ class TaskController extends Controller
             // Buscar jobs pendentes
             $pendingJobs = DB::table('jobs')
                 ->select(['id', 'queue', 'payload', 'attempts', 'created_at', 'available_at'])
+                ->where('queue', 'default') // Filtra jobs da fila padrão
                 ->orderBy('created_at', 'desc')
+                ->limit(50) // Limita para evitar sobrecarga
                 ->get();
 
             // Buscar jobs falhos
             $failedJobs = DB::table('failed_jobs')
                 ->select(['uuid', 'connection', 'queue', 'payload', 'exception', 'failed_at'])
                 ->orderBy('failed_at', 'desc')
+                ->limit(50) // Limita para evitar sobrecarga
                 ->get();
 
             // Buscar batches ativos
@@ -81,17 +85,20 @@ class TaskController extends Controller
         }
 
         try {
-            // Simulando a execução bem-sucedida para evitar erros
-            Log::info("Running task: " . $task);
-            
-            // Em vez de executar o Artisan command (que pode não existir)
-            // Vamos apenas simular a execução bem-sucedida
-            Cache::put("task_last_run_{$task}", now());
-            Cache::put("task_status_{$task}", 'completed');
+            // Pega a classe de job associada à tarefa
+            $jobClass = $this->availableTasks[$task]['job_class'] ?? null;
 
-            return response()->json([
-                'message' => 'Task executed successfully'
-            ]);
+            if ($jobClass && class_exists($jobClass)) {
+                // Dispatch o job diretamente
+                $job = new $jobClass();
+                dispatch($job);
+
+                return response()->json([
+                    'message' => 'Task queued successfully'
+                ]);
+            } else {
+                throw new \Exception('Job class not found');
+            }
         } catch (\Exception $e) {
             Log::error('Task execution failed', [
                 'task' => $task,
@@ -156,12 +163,29 @@ class TaskController extends Controller
 
     protected function calculateNextRun($command)
     {
-        // Todos os jobs rodam a cada 10 minutos
+        // Calcula o próximo horário baseado no último horário de execução
+        $lastRun = Cache::get("task_last_run_{$command}");
+        
+        if ($lastRun) {
+            $nextRun = Carbon::parse($lastRun)->addMinutes(10);
+            return $nextRun->format('Y-m-d H:i:s');
+        }
+
+        // Se nunca rodou, próxima execução é agora + 10 minutos
         return now()->addMinutes(10)->format('Y-m-d H:i:s');
     }
 
     protected function getTaskStatus($command)
     {
-        return Cache::get("task_status_{$command}", 'idle');
+        $lastRun = Cache::get("task_last_run_{$command}");
+        $status = Cache::get("task_status_{$command}", 'idle');
+
+        // Se o status for 'enabled' e já passou o tempo de execução, muda para 'waiting'
+        if ($status === 'enabled' && $lastRun) {
+            $nextRun = Carbon::parse($lastRun)->addMinutes(10);
+            return $nextRun->isPast() ? 'waiting' : 'scheduled';
+        }
+
+        return $status;
     }
 }
