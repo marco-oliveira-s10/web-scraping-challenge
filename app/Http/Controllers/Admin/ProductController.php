@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Services\ScrapingService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -41,10 +42,10 @@ class ProductController extends Controller
             // Get the currently selected category for the view
             $selectedCategory = $request->category ?? 'all';
             
-            return view('products.index', compact('products', 'categories', 'selectedCategory'));
+            return view('admin.products.index', compact('products', 'categories', 'selectedCategory'));
         } catch (\Exception $e) {
             Log::error('Error in product index: ' . $e->getMessage());
-            return view('products.index')
+            return view('admin.products.index')
                 ->with('error', 'An error occurred while fetching products.')
                 ->with('products', collect());
         }
@@ -74,10 +75,10 @@ class ProductController extends Controller
             Log::info($message);
             
             if ($success) {
-                return redirect()->route('products.index')
+                return redirect()->route('admin.products.index')
                     ->with('success', $message);
             } else {
-                return redirect()->route('products.index')
+                return redirect()->route('admin.products.index')
                     ->with('error', $message);
             }
         } catch (\Exception $e) {
@@ -86,7 +87,7 @@ class ProductController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             
-            return redirect()->route('products.index')
+            return redirect()->route('admin.products.index')
                 ->with('error', 'Ocorreu um erro inesperado durante o processo de coleta.');
         }
     }
@@ -99,11 +100,11 @@ class ProductController extends Controller
         try {
             $availableCategories = $this->scrapingService->getAvailableCategories();
             
-            return view('products.categories', compact('availableCategories'));
+            return view('admin.products.categories', compact('availableCategories'));
         } catch (\Exception $e) {
             Log::error('Error fetching available categories: ' . $e->getMessage());
             
-            return redirect()->route('products.index')
+            return redirect()->route('admin.products.index')
                 ->with('error', 'Failed to fetch available categories from the website.');
         }
     }
@@ -115,12 +116,76 @@ class ProductController extends Controller
     {
         try {
             $product = Product::findOrFail($id);
-            return view('products.show', compact('product'));
+            return view('admin.products.show', compact('product'));
         } catch (\Exception $e) {
             Log::error('Error showing product: ' . $e->getMessage());
             
-            return redirect()->route('products.index')
+            return redirect()->route('admin.products.index')
                 ->with('error', 'Product not found or cannot be displayed.');
+        }
+    }
+    
+    /**
+     * Show the form for editing the specified product.
+     */
+    public function edit($id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $categories = Product::distinct('category')->pluck('category');
+            
+            return view('admin.products.edit', compact('product', 'categories'));
+        } catch (\Exception $e) {
+            Log::error('Error in product edit: ' . $e->getMessage());
+            
+            return redirect()->route('admin.products.index')
+                ->with('error', 'Product not found or cannot be edited.');
+        }
+    }
+    
+    /**
+     * Update the specified product in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'price' => 'required|numeric|min:0',
+                'description' => 'nullable|string',
+                'image_url' => 'nullable|url',
+                'category' => 'nullable|string|max:100',
+            ]);
+            
+            $product = Product::findOrFail($id);
+            $product->update($validated);
+            
+            return redirect()->route('admin.products.show', $id)
+                ->with('success', 'Product updated successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error updating product: ' . $e->getMessage());
+            
+            return back()->withInput()
+                ->with('error', 'Failed to update the product. Please try again.');
+        }
+    }
+    
+    /**
+     * Remove the specified product from storage.
+     */
+    public function destroy($id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $product->delete();
+            
+            return redirect()->route('admin.products.index')
+                ->with('success', 'Product deleted successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error deleting product: ' . $e->getMessage());
+            
+            return back()
+                ->with('error', 'Failed to delete the product. Please try again.');
         }
     }
 }
