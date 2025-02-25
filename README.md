@@ -41,14 +41,14 @@ O objetivo deste projeto é demonstrar técnicas de web scraping em um ambiente 
 - PHP 8.1+
 - Composer
 - PostgreSQL 16
-- Node.js (para frontend)
+- Node.js (para frontend) (removido)
 - Git
 
 ## 🚀 Instalação Passo a Passo
 
 ### 1. Clonar o Repositório
 ```bash
-git clone https://github.com/seu-usuario/web-scraping-platform.git
+git clone https://github.com/marco-oliveira-s10/web-scraping-challenge.git
 cd web-scraping-platform
 ```
 
@@ -69,11 +69,6 @@ cp .env.example .env
 # Instalar dependências do PHP
 composer install
 
-# Instalar dependências do frontend
-npm install
-
-# Gerar chave da aplicação
-php artisan key:generate
 ```
 
 ### 3. Configurar Banco de Dados PostgreSQL
@@ -87,6 +82,10 @@ php artisan migrate
 
 # Popular dados iniciais
 php artisan db:seed
+
+# key Generate
+php artisan key:generate
+
 ```
 
 ### Dependências Específicas do PostgreSQL
@@ -101,16 +100,7 @@ sudo yum install php-pgsql             # Para CentOS/RHEL
 composer require doctrine/dbal
 ```
 
-### 4. Configurar Scraping
-```bash
-# Criar comando de scraping
-php artisan make:command ScrapeProdutos
-
-# Configurar agendamento no Kernel.php
-# $schedule->command('product:fetch')->everyTwoMinutes();
-```
-
-### 5. Rodar a Aplicação
+### 4. Rodar a Aplicação
 ```bash
 # Iniciar servidor local
 php artisan serve
@@ -124,19 +114,29 @@ npm run build
 
 ## 🕰️ Agendamento de Scraping
 
-### Método 1: Laravel Schedule (Recomendado)
+### Método 1: Laravel Schedule
 ```bash
-# Rodar schedule a cada 2 minutos
-php artisan schedule:run
+# Rodar schedule
+php artisan product:fetch
+
+#PONTO DE ATENÇÃO: Importante limpar o cache para carregar os produtos após uma nova instalação.
+php artisan cache:clear
+
 ```
 
-### Método 2: Windows Batch Script (Simulando CronJob)
+### Método 2: Executar Batch Script (Simulando CronJob em Ambientes)(Recomendado)
 ```batch
 @echo off
 :loop
 php artisan schedule:run
 timeout /t 120 /nobreak
 goto loop
+```
+
+```bash
+#PONTO DE ATENÇÃO: Importante limpar o cache para carregar os produtos após uma nova instalação.
+php artisan cache:clear
+
 ```
 
 ## 🔒 Configurações de Segurança
