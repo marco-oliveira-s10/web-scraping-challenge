@@ -1,23 +1,24 @@
-<!-- resources/views/layouts/app.blade.php --> 
+<!-- resources/views/layouts/app.blade.php -->
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
+
     <title>{{ config('app.name', 'Product Catalog') }}</title>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600" rel="stylesheet" />
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-    
+
     <!-- Custom Styles -->
     <style>
         :root {
@@ -33,9 +34,9 @@
             color: var(--text-color);
             line-height: 1.6;
         }
-        
+
         .navbar {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .navbar-brand {
@@ -54,12 +55,12 @@
         .product-card {
             transition: all 0.3s ease;
             border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .product-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         .product-card img {
@@ -93,6 +94,7 @@
         }
     </style>
 </head>
+
 <body>
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-white">
@@ -129,8 +131,8 @@
     <footer class="bg-white border-top py-4 mt-4">
         <div class="container text-center">
             <p class="text-muted mb-0">
-                &copy; {{ date('Y') }} Product Catalog. Built with 
-                <i class="fas fa-heart text-danger mx-1"></i> 
+                &copy; {{ date('Y') }} Product Catalog. Built with
+                <i class="fas fa-heart text-danger mx-1"></i>
                 using Laravel {{ app()->version() }}
             </p>
         </div>
@@ -138,7 +140,7 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Custom Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -153,4 +155,5 @@
         });
     </script>
 </body>
+
 </html>

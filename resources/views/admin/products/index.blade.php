@@ -12,17 +12,17 @@
             <div>
 
                 <form action="{{ route('admin.products.scrape') }}" method="POST" class="d-inline">
-        @csrf
-        <div class="input-group">
-            
-            <div class="input-group">
-                <button type="submit" class="d-none d-sm-inline-block btn btn-primary shadow-sm">
-                    <i class="fas fa-sync fa-sm text-white-50 mr-1"></i> Run Scraper
-                </button>
-            </div>
-        </div>
-    </form>
-               
+                    @csrf
+                    <div class="input-group">
+
+                        <div class="input-group">
+                            <button type="submit" class="d-none d-sm-inline-block btn btn-primary shadow-sm">
+                                <i class="fas fa-sync fa-sm text-white-50 mr-1"></i> Run Scraper
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
             </div>
         </div>
         <div class="card-body">

@@ -5,13 +5,9 @@ use App\Http\Controllers\ProductController;
 
 // Rotas públicas de produtos
 Route::prefix('/')->name('products.')->group(function () {
-    // Listagem de produtos
+
     Route::get('/', [ProductController::class, 'index'])->name('index');
-    
-    // Detalhes de um produto específico
     Route::get('/{id}', [ProductController::class, 'show'])->name('show');
-    
-    // Listar categorias
     Route::get('/categories', [ProductController::class, 'listCategories'])->name('categories');
 });
 

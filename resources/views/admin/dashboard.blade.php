@@ -9,7 +9,7 @@
     <form action="{{ route('admin.products.scrape') }}" method="POST" class="d-inline">
         @csrf
         <div class="input-group">
-            
+
             <div class="input-group">
                 <button type="submit" class="d-none d-sm-inline-block btn btn-primary shadow-sm">
                     <i class="fas fa-sync fa-sm text-white-50 mr-1"></i> Run Scraper
@@ -134,7 +134,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Failed Jobs Card -->
     <div class="col-xl-3 col-md-6 mb-4">
         <div class="card border-left-warning shadow h-100 py-2">

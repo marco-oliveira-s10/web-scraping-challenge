@@ -14,17 +14,17 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $category = $request->get('category');
-        
+
         // Cache para melhor performance
         $cacheKey = 'products_' . ($category ?? 'all') . '_page_' . $request->get('page', 1);
-        
+
         $products = Cache::remember($cacheKey, 600, function () use ($category) {
             $query = Product::query()->orderBy('name');
-            
+
             if ($category && $category !== 'all') {
                 $query->where('category', $category);
             }
-            
+
             return $query->paginate(12);
         });
 
@@ -35,7 +35,7 @@ class ProductController extends Controller
                 ->whereNotNull('category')
                 ->pluck('category');
         });
-                
+
         return view('products.index', compact('products', 'categories', 'category'));
     }
 
@@ -47,7 +47,7 @@ class ProductController extends Controller
         $product = Cache::remember('product_' . $id, 600, function () use ($id) {
             return Product::findOrFail($id);
         });
-        
+
         return view('products.show', compact('product'));
     }
 
@@ -59,14 +59,14 @@ class ProductController extends Controller
         $products = Cache::remember('products_category_' . $category, 600, function () use ($category) {
             return Product::where('category', $category)->paginate(12);
         });
-        
+
         $categories = Cache::remember('product_categories', 3600, function () {
             return Product::select('category')
                 ->distinct()
                 ->whereNotNull('category')
                 ->pluck('category');
         });
-        
+
         return view('products.index', compact('products', 'categories', 'category'));
     }
 
@@ -81,7 +81,7 @@ class ProductController extends Controller
                 ->whereNotNull('category')
                 ->pluck('category');
         });
-        
+
         return view('products.categories', compact('categories'));
     }
 }

@@ -19,7 +19,6 @@ class TaskController extends Controller
             'name' => 'Fetch Products',
             'description' => 'Fetch all products from external API',
             'schedule' => 'Every 2 minutes',
-            'job_class' => ScrapeProductsJob::class
         ]
     ];
 
@@ -66,13 +65,12 @@ class TaskController extends Controller
                 'failedJobs',
                 'jobBatches'
             ));
-
         } catch (\Exception $e) {
             Log::error('Error loading tasks page: ' . $e->getMessage(), [
                 'exception' => $e,
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->with('error', 'Error loading task information: ' . $e->getMessage());
         }
     }
@@ -80,22 +78,22 @@ class TaskController extends Controller
     public function run(Request $request)
     {
         $taskId = $request->input('task');
-    
+
         if ($taskId === 'product:fetch') {
             // Cria uma instância do ProductController
             $productController = app()->make(\App\Http\Controllers\Admin\ProductController::class);
-            
+
             // Chama o método scrape
             $response = $productController->scrape($request);
-    
+
             // Registra o horário da última execução
             Cache::put("task_last_run_{$taskId}", now());
-    
+
             return response()->json([
                 'message' => 'Scraping task started successfully'
             ]);
         }
-    
+
         return response()->json(['error' => 'Invalid task'], 400);
     }
 
@@ -143,25 +141,25 @@ class TaskController extends Controller
         }
     }
 
-   // Métodos para calcular last_run e next_run
-protected function getLastRunTime($command)
-{
-    $lastRun = Cache::get("task_last_run_{$command}");
-    return $lastRun ? Carbon::parse($lastRun)->format('Y-m-d H:i:s') : null;
-}
-
-protected function calculateNextRun($command)
-{
-    $lastRun = Cache::get("task_last_run_{$command}");
-    
-    if ($lastRun) {
-        $nextRun = Carbon::parse($lastRun)->addMinutes(2);
-        return $nextRun->format('Y-m-d H:i:s');
+    // Métodos para calcular last_run e next_run
+    protected function getLastRunTime($command)
+    {
+        $lastRun = Cache::get("task_last_run_{$command}");
+        return $lastRun ? Carbon::parse($lastRun)->format('Y-m-d H:i:s') : null;
     }
 
-    // Se nunca rodou, próxima execução é agora + 2 minutos
-    return now()->addMinutes(2)->format('Y-m-d H:i:s');
-}
+    protected function calculateNextRun($command)
+    {
+        $lastRun = Cache::get("task_last_run_{$command}");
+
+        if ($lastRun) {
+            $nextRun = Carbon::parse($lastRun)->addMinutes(2);
+            return $nextRun->format('Y-m-d H:i:s');
+        }
+
+        // Se nunca rodou, próxima execução é agora + 2 minutos
+        return now()->addMinutes(2)->format('Y-m-d H:i:s');
+    }
 
     protected function getTaskStatus($command)
     {

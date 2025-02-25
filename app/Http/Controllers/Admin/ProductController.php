@@ -113,4 +113,21 @@ class ProductController extends Controller
                 ->with('error', 'Não foi possível excluir o produto.');
         }
     }
+
+    // No ProductController
+    public function scheduledScrape()
+    {
+        try {
+            $success = $this->scrapingService->scrapeProducts();
+            $message = $success
+                ? "Successfully collected products"
+                : "Failed to collect products";
+
+            Log::info($message);
+            return $success;
+        } catch (\Exception $e) {
+            Log::error('Scraping error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

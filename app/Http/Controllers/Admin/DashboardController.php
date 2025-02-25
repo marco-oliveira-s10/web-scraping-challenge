@@ -156,42 +156,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * Run a scrape manually
-     */
-    public function runScrape(Request $request)
-    {
-        $category = $request->get('category');
-
-        try {
-            // Mark scraper as running
-            Cache::put('scraper_running', true, 3600); // 1 hour timeout
-
-            if ($category && $category !== 'all') {
-                // Dispatch job for specific category
-                ScrapeProductsJob::dispatch($category);
-                $message = "Started scraping job for category: {$category}";
-            } else {
-                // Dispatch job for all categories
-                ScrapeProductsJob::dispatch();
-                $message = "Started scraping job for all categories";
-            }
-
-            return redirect()->route('admin.dashboard')
-                ->with('success', $message);
-        } catch (\Exception $e) {
-            // Reset scraper running flag
-            Cache::forget('scraper_running');
-
-            return redirect()->route('admin.dashboard')
-                ->with('error', 'Failed to start scraping job: ' . $e->getMessage());
-        }
-    }
-
-
-
-
-
-    /**
      * Clear all cache
      */
     public function clearCache()

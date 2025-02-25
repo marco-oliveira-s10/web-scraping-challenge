@@ -11,24 +11,24 @@
         <div class="card-body">
             <div class="row">
                 @forelse($availableCategories as $category)
-                    <div class="col-md-4 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ $category }}</h5>
-                                <form action="{{ route('admin.products.scrape') }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="category" value="{{ $category }}">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-sync"></i> Scrape {{ $category }}
-                                    </button>
-                                </form>
-                            </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ $category }}</h5>
+                            <form action="{{ route('admin.products.scrape') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="category" value="{{ $category }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-sync"></i> Scrape {{ $category }}
+                                </button>
+                            </form>
                         </div>
                     </div>
+                </div>
                 @empty
-                    <div class="col-12">
-                        <div class="alert alert-info">No categories available for scraping.</div>
-                    </div>
+                <div class="col-12">
+                    <div class="alert alert-info">No categories available for scraping.</div>
+                </div>
                 @endforelse
             </div>
         </div>

@@ -21,29 +21,29 @@
                     </thead>
                     <tbody>
                         @forelse($logs as $log)
-                            <tr>
-                                <td>
-                                    <span class="badge badge-{{ 
+                        <tr>
+                            <td>
+                                <span class="badge badge-{{ 
                                         $log->type === 'success' ? 'success' : 
                                         ($log->type === 'error' ? 'danger' : 
                                         ($log->type === 'warning' ? 'warning' : 'info')) 
                                     }}">
-                                        {{ ucfirst($log->type) }}
-                                    </span>
-                                </td>
-                                <td>{{ $log->category ?? 'All' }}</td>
-                                <td>{{ $log->message }}</td>
-                                <td>{{ $log->formatted_occurred_at }}</td>
-                            </tr>
+                                    {{ ucfirst($log->type) }}
+                                </span>
+                            </td>
+                            <td>{{ $log->category ?? 'All' }}</td>
+                            <td>{{ $log->message }}</td>
+                            <td>{{ $log->formatted_occurred_at }}</td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="4" class="text-center">No logs found</td>
-                            </tr>
+                        <tr>
+                            <td colspan="4" class="text-center">No logs found</td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            
+
             {{ $logs->links() }}
         </div>
     </div>

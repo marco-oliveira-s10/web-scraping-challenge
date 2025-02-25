@@ -15,7 +15,7 @@ class AuthController extends Controller
     {
         return view('admin.auth.login');
     }
-    
+
     /**
      * Process the login request.
      */
@@ -25,28 +25,28 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
-        
+
         if (Auth::guard('admin')->attempt($credentials)) {
             $request->session()->regenerate();
-            
+
             return redirect()->intended(route('admin.dashboard'));
         }
-        
+
         return back()->withErrors([
             'email' => 'As credenciais fornecidas não correspondem aos nossos registros.',
         ])->withInput($request->only('email'));
     }
-    
+
     /**
      * Log the user out.
      */
     public function logout(Request $request)
     {
         Auth::guard('admin')->logout();
-        
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
+
         return redirect()->route('admin.login');
     }
 }

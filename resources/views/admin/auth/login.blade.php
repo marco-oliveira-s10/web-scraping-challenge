@@ -17,7 +17,7 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Custom styles -->
     <style>
         :root {
@@ -30,7 +30,7 @@
             --light: #f8f9fc;
             --dark: #5a5c69;
         }
-        
+
         body {
             font-family: 'Nunito', sans-serif;
             background-color: #4e73df;
@@ -41,13 +41,13 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .card {
             border: none;
             border-radius: 1rem;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
-        
+
         .card-header {
             background-color: #fff;
             border-bottom: 1px solid #e3e6f0;
@@ -55,17 +55,17 @@
             border-top-left-radius: 1rem !important;
             border-top-right-radius: 1rem !important;
         }
-        
+
         .card-body {
             padding: 2rem;
         }
-        
+
         .form-control {
             border-radius: 10rem;
             font-size: 0.8rem;
             padding: 1.5rem 1rem;
         }
-        
+
         .btn-primary {
             background-color: #4e73df;
             border-color: #4e73df;
@@ -73,16 +73,16 @@
             font-size: 0.8rem;
             border-radius: 10rem;
         }
-        
+
         .btn-primary:hover {
             background-color: #2e59d9;
             border-color: #2e59d9;
         }
-        
+
         .btn-block {
             padding: 0.75rem;
         }
-        
+
         .text-primary {
             color: #4e73df !important;
         }
@@ -110,21 +110,21 @@
                                     <div class="text-center">
                                         <h1 class="h4 text-gray-900 mb-4">Welcome Back!</h1>
                                     </div>
-                                    
+
                                     @if($errors->any())
-                                        <div class="alert alert-danger" role="alert">
-                                            {{ $errors->first() }}
-                                        </div>
+                                    <div class="alert alert-danger" role="alert">
+                                        {{ $errors->first() }}
+                                    </div>
                                     @endif
-                                    
+
                                     <form class="user" method="POST" action="{{ route('admin.login.post') }}">
                                         @csrf
                                         <div class="form-group">
-                                            <input type="email" class="form-control form-control-user" id="email" name="email" 
+                                            <input type="email" class="form-control form-control-user" id="email" name="email"
                                                 placeholder="Enter Email Address..." value="{{ old('email') }}" required autofocus>
                                         </div>
                                         <div class="form-group">
-                                            <input type="password" class="form-control form-control-user" id="password" name="password" 
+                                            <input type="password" class="form-control form-control-user" id="password" name="password"
                                                 placeholder="Password" required>
                                         </div>
                                         <div class="form-group">
