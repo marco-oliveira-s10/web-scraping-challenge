@@ -41,7 +41,7 @@ O objetivo deste projeto é demonstrar técnicas de web scraping em um ambiente 
 - PHP 8.1+
 - Composer
 - PostgreSQL 16
-- Node.js (para frontend)
+- Node.js (para frontend) (removido)
 - Git
 
 ## 🚀 Instalação Passo a Passo
