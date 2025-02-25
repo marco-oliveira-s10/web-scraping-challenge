@@ -153,7 +153,147 @@ class DashboardController extends Controller
             'Post Max Size' => ini_get('post_max_size'),
         ];
         
+        // Check essential services
+        $services = [
+            'Database' => $this->checkDatabaseConnection(),
+            'Cache' => $this->checkCacheService(),
+            'Queue' => $this->checkQueueService(),
+            'Redis' => $redisConnected,
+            'Scheduler' => $isSchedulerRunning,
+        ];
+        
         return view('admin.status', compact(
             'queueConnection',
             'cacheDriver',
-            '
+            'dbConnection',
+            'systemInfo',
+            'services',
+            'isSchedulerRunning'
+        ));
+    }
+    
+    /**
+     * Run a scrape manually
+     */
+    public function runScrape(Request $request)
+    {
+        $category = $request->get('category');
+        
+        try {
+            // Mark scraper as running
+            Cache::put('scraper_running', true, 3600); // 1 hour timeout
+            
+            if ($category && $category !== 'all') {
+                // Dispatch job for specific category
+                ScrapeProductsJob::dispatch($category);
+                $message = "Started scraping job for category: {$category}";
+            } else {
+                // Dispatch job for all categories
+                ScrapeProductsJob::dispatch();
+                $message = "Started scraping job for all categories";
+            }
+            
+            return redirect()->route('admin.dashboard')
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            // Reset scraper running flag
+            Cache::forget('scraper_running');
+            
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Failed to start scraping job: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Retry a failed job
+     */
+    public function retryJob(Request $request)
+    {
+        $uuid = $request->get('uuid');
+        
+        try {
+            Artisan::call('queue:retry', ['id' => $uuid]);
+            
+            return redirect()->route('admin.tasks')
+                ->with('success', 'Job queued for retry');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.tasks')
+                ->with('error', 'Failed to retry job: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Clear all failed jobs
+     */
+    public function clearFailedJobs()
+    {
+        try {
+            Artisan::call('queue:flush');
+            
+            return redirect()->route('admin.tasks')
+                ->with('success', 'All failed jobs have been cleared');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.tasks')
+                ->with('error', 'Failed to clear jobs: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Clear all cache
+     */
+    public function clearCache()
+    {
+        try {
+            Artisan::call('cache:clear');
+            
+            return redirect()->route('admin.status')
+                ->with('success', 'Cache cleared successfully');
+        } catch (\Exception $e) {
+            return redirect()->route('admin.status')
+                ->with('error', 'Failed to clear cache: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Check database connection health
+     */
+    private function checkDatabaseConnection()
+    {
+        try {
+            // Simple query to check connection
+            DB::connection()->getPdo();
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Check cache service health
+     */
+    private function checkCacheService()
+    {
+        try {
+            $testKey = 'system_status_test_' . time();
+            Cache::put($testKey, true, 60);
+            $result = Cache::get($testKey) === true;
+            Cache::forget($testKey);
+            return $result;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Check queue service health
+     */
+    private function checkQueueService()
+    {
+        try {
+            // This is a simplified check - in production would be more thorough
+            return config('queue.default') !== 'sync';
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+}
