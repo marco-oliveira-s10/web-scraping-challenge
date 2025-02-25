@@ -47,6 +47,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login');
+        return redirect()->route('admin.login')
+            ->with('status', 'Você foi deslogado com sucesso.');
     }
 }

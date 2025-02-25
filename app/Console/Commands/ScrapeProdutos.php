@@ -15,10 +15,10 @@ class ScrapeProdutos extends Command
     {
         $request = new Request();
         $request->merge(['task' => 'product:fetch']);
-        
+
         $productController = app()->make(ProductController::class);
         $productController->scrape($request);
-        
+
         $this->info('Produtos buscados com sucesso');
         return 0;
     }

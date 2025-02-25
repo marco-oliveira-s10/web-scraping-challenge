@@ -125,7 +125,12 @@
             <div id="content">
                 <!-- Topbar -->
                 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                    <!-- Conteúdo da topbar existente -->
+                    <form action="{{ route('admin.logout') }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
                 </nav>
                 <!-- End of Topbar -->
 

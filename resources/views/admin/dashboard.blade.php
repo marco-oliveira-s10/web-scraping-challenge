@@ -59,24 +59,10 @@
                     </p>
                 </div>
                 <div class="mb-3">
-                    <h5>Last Scrape</h5>
-                    <p>
-                        @if($lastScrapeTime)
-                        {{ $lastScrapeTime->diffForHumans() }}
-                        <small class="text-muted">({{ $lastScrapeTime->format('M d, Y H:i:s') }})</small>
-                        @else
-                        Never
-                        @endif
-                    </p>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="mb-3">
-                    <h5>Queue Status</h5>
-                    <p>
-                        <span class="badge badge-primary">{{ $pendingJobs }} Pending</span>
-                        <span class="badge badge-danger">{{ $failedJobs }} Failed</span>
-                    </p>
+                <div class="mb-3">                   
                 </div>
                 <div class="mb-3">
                     <h5>Quick Actions</h5>

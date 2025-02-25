@@ -1,191 +1,183 @@
-# Sistema de Gerenciamento de Tarefas
+# Web Scraping Platform
 
-Este é um sistema de gerenciamento de tarefas integrado a uma aplicação Laravel para monitorar e executar jobs agendados. O sistema permite visualizar, iniciar manualmente e controlar jobs.
+## 🌐 Visão Geral do Projeto
 
-## Funcionalidades
+Este projeto é uma plataforma de web scraping desenvolvida em Laravel, projetada para coletar, gerenciar e visualizar produtos de diferentes categorias de forma automatizada e eficiente.
 
-- Painel de controle com visão geral dos jobs
-- Visualização e gerenciamento de tarefas agendadas
-- Monitoramento de jobs pendentes e falhos
-- Execução manual de tarefas
-- Alternância de status de tarefas (habilitar/desabilitar)
+### 🔍 Fonte de Dados: WebScraper.io
 
-## Requisitos do Sistema
+O projeto utiliza o site https://webscraper.io/test-sites/e-commerce/allinone, uma página de demonstração especificamente criada para testes e prática de web scraping. Este site simula um ambiente de e-commerce completo com características típicas de lojas online reais.
 
-- PHP 8.0 ou superior
+#### Características Principais do Site de Demonstração:
+* 🏷️ Produtos organizados em categorias (computadores, telefones, tablets, monitores)
+* 📸 Listagens de produtos com imagens, preços e descrições detalhadas
+* 🧭 Estrutura de navegação com menus e submenus
+* 📄 Elementos de paginação
+* 🔬 Detalhes de produtos para análise
+
+#### Propósito do Projeto
+O objetivo deste projeto é demonstrar técnicas de web scraping em um ambiente seguro e legal, utilizando um site de teste projetado especificamente para desenvolvedores. Foi desenvolvido como um desafio técnico para avaliar habilidades de scraping em diferentes níveis de complexidade (Júnior, Pleno e Sênior).
+
+## ✨ Principais Funcionalidades
+
+### 🕷️ Scraping Automatizado
+- Coleta de produtos de múltiplas categorias
+- Agendamento automático de scraping
+- Suporte a diferentes fontes de dados
+
+### 📊 Painel Administrativo
+- Visualização de produtos coletados
+- Gerenciamento de logs de scraping
+- Monitoramento de status do sistema
+
+### 🔍 Recursos Principais
+- Coleta de produtos em tempo real
+- Categorização automática
+- Cache inteligente
+- Registro detalhado de operações
+
+## 🛠️ Requisitos do Sistema
+
+- PHP 8.1+
 - Composer
-- Laravel 8.x ou superior
-- MySQL 5.7 ou superior
-- Node.js e NPM (para os assets frontend)
+- PostgreSQL 16
+- Node.js (para frontend)
+- Git
 
-## Instalação
+## 🚀 Instalação Passo a Passo
 
-Siga os passos abaixo para instalar e configurar o sistema em sua máquina local:
-
-### 1. Clone o repositório
-
+### 1. Clonar o Repositório
 ```bash
-git clone https://github.com/seu-usuario/seu-repositorio.git
-cd seu-repositorio
+git clone https://github.com/seu-usuario/web-scraping-platform.git
+cd web-scraping-platform
 ```
 
-### 2. Instale as dependências
-
+### 2. Configurar Ambiente
 ```bash
-composer install
-npm install
-npm run dev
-```
-
-### 3. Configure o ambiente
-
-Copie o arquivo de ambiente e configure-o com suas informações:
-
-```bash
+# Copiar arquivo de configuração
 cp .env.example .env
+
+# Configurar banco de dados PostgreSQL no .env
+# Edite as configurações:
+# DB_CONNECTION=pgsql
+# DB_HOST=127.0.0.1
+# DB_PORT=5432
+# DB_DATABASE=seu_banco_de_dados
+# DB_USERNAME=seu_usuario
+# DB_PASSWORD=sua_senha
+
+# Instalar dependências do PHP
+composer install
+
+# Instalar dependências do frontend
+npm install
+
+# Gerar chave da aplicação
 php artisan key:generate
 ```
 
-Edite o arquivo `.env` com suas configurações de banco de dados:
-
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=nome_do_banco
-DB_USERNAME=usuario
-DB_PASSWORD=senha
-```
-
-### 4. Configure o banco de dados
-
+### 3. Configurar Banco de Dados PostgreSQL
 ```bash
+# Criar banco de dados (se ainda não existir)
+# Você pode usar o psql ou qualquer client PostgreSQL
+createdb seu_banco_de_dados
+
+# Rodar migrações
 php artisan migrate
+
+# Popular dados iniciais
+php artisan db:seed
 ```
 
-### 5. Configure o job scheduler
-
-Para que as tarefas agendadas funcionem, você precisa configurar o scheduler do Laravel. Adicione a seguinte entrada ao seu crontab:
-
+### Dependências Específicas do PostgreSQL
+Certifique-se de ter instalado:
 ```bash
-* * * * * cd /caminho/para/seu/projeto && php artisan schedule:run >> /dev/null 2>&1
+# Extensões PHP para PostgreSQL
+sudo apt-get install php-pgsql        # Para sistemas baseados em Debian/Ubuntu
+# ou
+sudo yum install php-pgsql             # Para CentOS/RHEL
+
+# Extensão Postgres para Laravel
+composer require doctrine/dbal
 ```
 
-Para desenvolvimento local, você pode executar:
-
+### 4. Configurar Scraping
 ```bash
-php artisan schedule:work
+# Criar comando de scraping
+php artisan make:command ScrapeProdutos
+
+# Configurar agendamento no Kernel.php
+# $schedule->command('product:fetch')->everyTwoMinutes();
 ```
 
-### 6. Configure a fila de jobs
-
-Se estiver usando o driver de fila padrão (sync), não há configuração adicional necessária. Para ambientes de produção, recomenda-se usar o driver Redis ou Database.
-
-Para executar o worker de fila:
-
+### 5. Rodar a Aplicação
 ```bash
-php artisan queue:work
-```
-
-### 7. Inicie o servidor
-
-```bash
+# Iniciar servidor local
 php artisan serve
+
+# Compilar assets
+npm run dev
+
+# Para produção
+npm run build
 ```
 
-O aplicativo estará disponível em `http://localhost:8000`
+## 🕰️ Agendamento de Scraping
 
-## Uso do Sistema
-
-### Acessando o Painel de Administração
-
-1. Acesse `http://localhost:8000/admin`
-2. Faça login com suas credenciais de administrador
-
-### Gerenciando Tarefas
-
-1. No painel de administração, clique em "Tasks" no menu lateral
-2. Visualize todas as tarefas agendadas no sistema
-3. Use os botões de ação para:
-   - Executar uma tarefa imediatamente (botão Play)
-   - Pausar/Retomar uma tarefa (botão Pause)
-
-### Monitorando Jobs
-
-O sistema mostra automaticamente:
-- Número de jobs pendentes
-- Número de jobs falhos
-- Batches ativos
-- Próxima execução agendada
-
-## Arquitetura
-
-O sistema é baseado na arquitetura MVC do Laravel:
-
-- **Controllers**: `App\Http\Controllers\Admin\TaskController` e `App\Http\Controllers\Admin\DashboardController`
-- **Views**: Localizadas em `resources/views/admin/tasks.blade.php`
-- **Routes**: Definidas em `routes/web.php`
-
-Os jobs agendados são configurados no `App\Console\Kernel.php` e podem ser personalizados conforme a necessidade.
-
-## Personalizando
-
-### Adicionando Novas Tarefas
-
-Para adicionar novas tarefas, edite o arquivo `App\Http\Controllers\Admin\TaskController.php` e adicione novos itens ao array `$availableTasks`:
-
-```php
-public $availableTasks = [
-    'product:fetch' => [
-        'name' => 'Fetch Products',
-        'description' => 'Fetch all products from external API',
-        'schedule' => 'Every 10 minutes'
-    ],
-    'sua:nova-tarefa' => [
-        'name' => 'Nome da Nova Tarefa',
-        'description' => 'Descrição da sua nova tarefa',
-        'schedule' => 'Programação (ex: Diariamente)'
-    ]
-];
+### Método 1: Laravel Schedule (Recomendado)
+```bash
+# Rodar schedule a cada 2 minutos
+php artisan schedule:run
 ```
 
-Depois, crie um comando Artisan correspondente:
+### Método 2: Windows Batch Script (Simulando CronJob)
+```batch
+@echo off
+:loop
+php artisan schedule:run
+timeout /t 120 /nobreak
+goto loop
+```
+
+## 🔒 Configurações de Segurança
+
+- Utilize autenticação de admin (Tela login)
+- Proteja rotas sensíveis
+
+## 📋 Comandos Úteis
 
 ```bash
-php artisan make:command SuaNovaTarefa --command=sua:nova-tarefa
+# Limpar caches
+php artisan config:clear
+php artisan cache:clear
+
+# Rodar testes
+php artisan test
+
+# Verificar status do schedule
+php artisan schedule:list
 ```
 
-E edite o arquivo gerado em `app/Console/Commands/SuaNovaTarefa.php`.
+## 🐛 Solução de Problemas
 
-## Solução de Problemas
+- Verifique logs em `storage/logs/laravel.log`
+- Confirme configurações do `.env`
+- Garanta permissões de diretório
 
-### Jobs não estão executando
+## 🤝 Contribuição
 
-- Verifique se o scheduler do Laravel está configurado corretamente
-- Verifique os logs em `storage/logs/laravel.log`
-- Certifique-se de que o worker da fila está em execução
-
-### Erros de Interface
-
-- Execute `npm run dev` para recompilar os assets
-- Limpe o cache do navegador
-
-### Erros 500
-
-- Verifique os logs do Laravel em `storage/logs/laravel.log`
-- Verifique as permissões de arquivos e pastas
-- Certifique-se de que todas as dependências estão instaladas
-
-## Contribuindo
-
-Contribuições são bem-vindas! Para contribuir:
-
-1. Fork o repositório
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
-3. Commit suas alterações (`git commit -m 'Adiciona nova funcionalidade'`)
-4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+1. Faça um Fork do projeto
+2. Crie sua Feature Branch (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'Adiciona NovaFuncionalidade'`)
+4. Push para a Branch (`git push origin feature/NovaFuncionalidade`)
 5. Abra um Pull Request
 
-## Licença
+## 📄 Licença
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes.
+Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
+
+## 📞 Contato
+
+Seu Nome - marco.oliveira.s10@gmail.com
+
+Link do Projeto: [https://github.com/seu-usuario/web-scraping-platform](https://github.com/marco-oliveira-s10/web-scraping-challenge)
