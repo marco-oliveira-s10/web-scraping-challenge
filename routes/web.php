@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\TaskController;
 
 // Rotas de autenticação para Admin
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -19,17 +20,27 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Dashboard
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         
-        // Rotas de produtos
+        // Tasks
+        Route::prefix('tasks')->name('tasks.')->group(function () {
+            Route::get('/', [TaskController::class, 'index'])->name('index');
+            Route::post('/run', [TaskController::class, 'run'])->name('run');
+            Route::get('/status', [TaskController::class, 'status'])->name('status');
+            Route::post('/{task}/toggle', [TaskController::class, 'toggle'])->name('toggle');
+            Route::post('/retry', [TaskController::class, 'retry'])->name('retry');
+            Route::post('/retry-all', [TaskController::class, 'retryAll'])->name('retry-all');
+            Route::post('/clear', [TaskController::class, 'clear'])->name('clear');
+        });
+        
+        // Produtos
         Route::prefix('/products')->name('products.')->group(function () {
             Route::get('/', [ProductController::class, 'index'])->name('index');
             Route::get('/{id}', [ProductController::class, 'show'])->name('show');
             Route::post('/scrape', [ProductController::class, 'scrape'])->name('scrape');
-            Route::get('/available-categories', [ProductController::class, 'categories'])->name('categories');
-
+            Route::get('/categories', [ProductController::class, 'categories'])->name('categories');
             Route::delete('/{id}', [ProductController::class, 'destroy'])->name('destroy');
         });
         
-        // Rotas de sistema
+        // Rotas do sistema
         Route::get('/logs', [DashboardController::class, 'logs'])->name('logs');
         Route::get('/tasks', [DashboardController::class, 'tasks'])->name('tasks');
         Route::get('/status', [DashboardController::class, 'status'])->name('status');
@@ -38,8 +49,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/retry-job', [DashboardController::class, 'retryJob'])->name('retry-job');
         Route::post('/clear-failed-jobs', [DashboardController::class, 'clearFailedJobs'])->name('clear-failed-jobs');
         Route::post('/clear-cache', [DashboardController::class, 'clearCache'])->name('clear-cache');
-
-        
     });
 });
 
@@ -48,5 +57,5 @@ Route::get('/login', function () {
     return redirect('/admin/login');
 })->name('login');
 
-// Carregue as rotas públicas de um arquivo separado
+// Carregue as rotas públicas
 require __DIR__ . '/public.php';

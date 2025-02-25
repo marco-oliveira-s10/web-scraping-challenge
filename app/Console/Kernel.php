@@ -5,6 +5,8 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Jobs\ScrapeProductsJob;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
 {
@@ -13,14 +15,57 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Schedule the scraping job to run every day at midnight
-        $schedule->job(new ScrapeProductsJob)->dailyAt('00:00');
+        // Principal job de scraping - roda a cada 6 horas
+        $schedule->job(new ScrapeProductsJob)
+            ->everyFourHours()
+            ->withoutOverlapping()
+            ->onSuccess(function () {
+                Cache::put('last_successful_scrape', now());
+                Log::info('Scheduled scraping completed successfully');
+            })
+            ->onFailure(function () {
+                Log::error('Scheduled scraping failed');
+            });
         
-        // Schedule category-specific scraping jobs to run at different times
-        $schedule->command('scraper:categories')->dailyAt('02:00');
+        // Job de categorias específicas - roda duas vezes por dia
+        $schedule->command('scraper:categories')
+            ->twiceDaily(1, 13)
+            ->withoutOverlapping()
+            ->emailOutputOnFailure(['admin@example.com']);
         
-        // Cleanup old logs and failed jobs once a week
-        $schedule->command('scraper:cleanup')->weekly();
+        // Limpeza semanal
+        $schedule->command('scraper:cleanup')
+            ->weekly()
+            ->sundays()
+            ->at('00:00')
+            ->withoutOverlapping();
+            
+        // Monitoramento de saúde do sistema - a cada 15 minutos
+        $schedule->command('health:check')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping();
+            
+        // Limpeza de cache antiga - diariamente
+        $schedule->command('cache:prune-stale-tags')->daily();
+        
+        // Manutenção do banco de dados - semanalmente
+        $schedule->command('db:clean')
+            ->weekly()
+            ->saturdays()
+            ->at('02:00')
+            ->withoutOverlapping();
+            
+        // Monitoramento do Redis
+        $schedule->command('queue:monitor')
+            ->everyTenMinutes()
+            ->withoutOverlapping();
+            
+        // Backup do banco - diariamente
+        $schedule->command('backup:run')
+            ->dailyAt('01:00')
+            ->onFailure(function () {
+                Log::error('Database backup failed');
+            });
     }
 
     /**
