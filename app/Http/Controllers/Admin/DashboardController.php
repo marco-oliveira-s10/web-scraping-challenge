@@ -27,32 +27,32 @@ class DashboardController extends Controller
             ->get()
             ->pluck('count', 'category')
             ->toArray();
-        
+
         // Get latest logs
         $recentLogs = ScrapingLog::orderBy('occurred_at', 'desc')
             ->limit(5)
             ->get();
-        
+
         // Count logs by type for chart
         $logTypeCounts = ScrapingLog::select('type', DB::raw('count(*) as count'))
             ->groupBy('type')
             ->get()
             ->pluck('count', 'type')
             ->toArray();
-        
+
         // Get queue status
         $failedJobs = DB::table('failed_jobs')->count();
         $pendingJobs = DB::table('jobs')->count();
-        
+
         // Check if scraper is currently running
         $isScraperRunning = Cache::get('scraper_running', false);
-        
+
         // Get last scrape time
         $lastScrapeTime = Cache::get('last_scrape_time');
         if ($lastScrapeTime) {
             $lastScrapeTime = Carbon::parse($lastScrapeTime);
         }
-        
+
         return view('admin.dashboard', compact(
             'productCount',
             'categoryCounts',
@@ -64,7 +64,7 @@ class DashboardController extends Controller
             'lastScrapeTime'
         ));
     }
-    
+
     /**
      * Display logs page.
      */
@@ -72,53 +72,36 @@ class DashboardController extends Controller
     {
         $filter = $request->get('filter', 'all');
         $category = $request->get('category');
-        
+
         $logsQuery = ScrapingLog::query()->orderBy('occurred_at', 'desc');
-        
+
         if ($filter !== 'all') {
             $logsQuery->where('type', $filter);
         }
-        
+
         if ($category) {
             $logsQuery->where('category', $category);
         }
-        
+
         $logs = $logsQuery->paginate(20);
-        
+
         $categories = ScrapingLog::select('category')
             ->distinct()
             ->whereNotNull('category')
             ->pluck('category');
-        
+
         return view('admin.logs', compact('logs', 'filter', 'category', 'categories'));
     }
-    
+
     /**
      * Display tasks page.
      */
     public function tasks()
     {
-        $pendingJobs = DB::table('jobs')
-            ->select('queue', 'payload', 'attempts', 'created_at')
-            ->orderBy('created_at', 'desc')
-            ->get();
-        
-        $failedJobs = DB::table('failed_jobs')
-            ->select('uuid', 'connection', 'queue', 'payload', 'exception', 'failed_at')
-            ->orderBy('failed_at', 'desc')
-            ->get();
-        
-        $jobBatches = [];
-        if (DB::getSchemaBuilder()->hasTable('job_batches')) {
-            $jobBatches = DB::table('job_batches')
-                ->select('id', 'name', 'total_jobs', 'pending_jobs', 'failed_jobs', 'created_at', 'finished_at')
-                ->orderBy('created_at', 'desc')
-                ->get();
-        }
-        
-        return view('admin.tasks', compact('pendingJobs', 'failedJobs', 'jobBatches'));
+        $taskController = app()->make(\App\Http\Controllers\Admin\TaskController::class);
+        return $taskController->index();
     }
-    
+
     /**
      * Display system status page.
      */
@@ -127,11 +110,11 @@ class DashboardController extends Controller
         $queueConnection = config('queue.default');
         $cacheDriver = config('cache.default');
         $dbConnection = config('database.default');
-        
+
         // Check if scheduler is running
         $schedulerLastRun = Cache::get('scheduler_last_run');
         $isSchedulerRunning = $schedulerLastRun && Carbon::parse($schedulerLastRun)->isAfter(Carbon::now()->subHours(1));
-        
+
         // Check Redis connection if used
         $redisConnected = false;
         if (in_array($queueConnection, ['redis']) || in_array($cacheDriver, ['redis'])) {
@@ -141,7 +124,7 @@ class DashboardController extends Controller
                 $redisConnected = false;
             }
         }
-        
+
         // Get system info
         $systemInfo = [
             'PHP Version' => PHP_VERSION,
@@ -152,16 +135,16 @@ class DashboardController extends Controller
             'Upload Max Filesize' => ini_get('upload_max_filesize'),
             'Post Max Size' => ini_get('post_max_size'),
         ];
-        
+
         // Check essential services
         $services = [
             'Database' => $this->checkDatabaseConnection(),
             'Cache' => $this->checkCacheService(),
             'Queue' => $this->checkQueueService(),
-            'Redis' => $redisConnected,
-            'Scheduler' => $isSchedulerRunning,
+            //'Redis' => $redisConnected,
+            //'Scheduler' => $isSchedulerRunning,
         ];
-        
+
         return view('admin.status', compact(
             'queueConnection',
             'cacheDriver',
@@ -171,18 +154,18 @@ class DashboardController extends Controller
             'isSchedulerRunning'
         ));
     }
-    
+
     /**
      * Run a scrape manually
      */
     public function runScrape(Request $request)
     {
         $category = $request->get('category');
-        
+
         try {
             // Mark scraper as running
             Cache::put('scraper_running', true, 3600); // 1 hour timeout
-            
+
             if ($category && $category !== 'all') {
                 // Dispatch job for specific category
                 ScrapeProductsJob::dispatch($category);
@@ -192,52 +175,22 @@ class DashboardController extends Controller
                 ScrapeProductsJob::dispatch();
                 $message = "Started scraping job for all categories";
             }
-            
+
             return redirect()->route('admin.dashboard')
                 ->with('success', $message);
         } catch (\Exception $e) {
             // Reset scraper running flag
             Cache::forget('scraper_running');
-            
+
             return redirect()->route('admin.dashboard')
                 ->with('error', 'Failed to start scraping job: ' . $e->getMessage());
         }
     }
-    
-    /**
-     * Retry a failed job
-     */
-    public function retryJob(Request $request)
-    {
-        $uuid = $request->get('uuid');
-        
-        try {
-            Artisan::call('queue:retry', ['id' => $uuid]);
-            
-            return redirect()->route('admin.tasks')
-                ->with('success', 'Job queued for retry');
-        } catch (\Exception $e) {
-            return redirect()->route('admin.tasks')
-                ->with('error', 'Failed to retry job: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Clear all failed jobs
-     */
-    public function clearFailedJobs()
-    {
-        try {
-            Artisan::call('queue:flush');
-            
-            return redirect()->route('admin.tasks')
-                ->with('success', 'All failed jobs have been cleared');
-        } catch (\Exception $e) {
-            return redirect()->route('admin.tasks')
-                ->with('error', 'Failed to clear jobs: ' . $e->getMessage());
-        }
-    }
-    
+
+
+
+
+
     /**
      * Clear all cache
      */
@@ -245,7 +198,7 @@ class DashboardController extends Controller
     {
         try {
             Artisan::call('cache:clear');
-            
+
             return redirect()->route('admin.status')
                 ->with('success', 'Cache cleared successfully');
         } catch (\Exception $e) {
@@ -253,7 +206,7 @@ class DashboardController extends Controller
                 ->with('error', 'Failed to clear cache: ' . $e->getMessage());
         }
     }
-    
+
     /**
      * Check database connection health
      */
@@ -267,7 +220,7 @@ class DashboardController extends Controller
             return false;
         }
     }
-    
+
     /**
      * Check cache service health
      */
@@ -283,7 +236,7 @@ class DashboardController extends Controller
             return false;
         }
     }
-    
+
     /**
      * Check queue service health
      */
@@ -295,5 +248,18 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+
+    public function retryJob(Request $request)
+    {
+        return redirect()->route('admin.tasks.index')
+            ->with('info', 'This function has been simplified.');
+    }
+
+    public function clearFailedJobs()
+    {
+        return redirect()->route('admin.tasks.index')
+            ->with('info', 'This function has been simplified.');
     }
 }

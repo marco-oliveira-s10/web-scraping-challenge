@@ -21,16 +21,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         
         // Tasks
-        Route::prefix('tasks')->name('tasks.')->group(function () {
-            Route::get('/', [TaskController::class, 'index'])->name('index');
-            Route::post('/run', [TaskController::class, 'run'])->name('run');
-            Route::get('/status', [TaskController::class, 'status'])->name('status');
-            Route::post('/{task}/toggle', [TaskController::class, 'toggle'])->name('toggle');
-            Route::post('/retry', [TaskController::class, 'retry'])->name('retry');
-            Route::post('/retry-all', [TaskController::class, 'retryAll'])->name('retry-all');
-            Route::post('/clear', [TaskController::class, 'clear'])->name('clear');
-        });
-        
+// Tasks
+Route::prefix('tasks')->name('tasks.')->group(function () {
+    Route::get('/', [TaskController::class, 'index'])->name('index');
+    Route::post('/run', [TaskController::class, 'run'])->name('run');
+    Route::get('/status', [TaskController::class, 'status'])->name('status');
+    Route::post('/{task}/toggle', [TaskController::class, 'toggle'])->name('toggle');
+});
         // Produtos
         Route::prefix('/products')->name('products.')->group(function () {
             Route::get('/', [ProductController::class, 'index'])->name('index');
